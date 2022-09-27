@@ -25,3 +25,6 @@ jobs:
       - name: echo repo
         run: |
           echo ${{ steps.github-repo.output.REPO }}
+      - name: hello repo
+        run: |
+          echo "hello repo"
