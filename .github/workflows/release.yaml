@@ -1,0 +1,100 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+      - release-workflows
+    paths:
+      - ".github/workflows/reusable-**"
+    tags:
+      - '*'
+
+  pull_request:
+    paths:
+      - ".github/workflows/reusable-**"
+    branches:
+      - main
+
+jobs:
+  affected:
+    runs-on: ubuntu-latest
+    outputs:
+      changed-workflows: ${{ steps.changed-workflows.outputs.values }}
+      workflows-matrix: ${{ steps.build-matrix.outputs.matrix }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v11.5
+
+      - name: Get changed workflows ounder /workflows
+        id: changed-workflows
+        run: |
+          changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}" \
+          | tr " " "\n" |  sed '/^\.github\/workflows\/reusable-/!d' \
+          | sed 's/^\.github\/workflows\/reusable-//g;s/\.yaml//g' \
+          | sort -u | tr "\n" "," | sed 's/.$//')
+          echo "Changed Workflows: $changed_workflows"
+          echo "::set-output name=values::$changed_workflows"
+
+      - name: Build matrix
+        if: ${{ steps.changed-workflows.outputs.values != '' }}
+        id: build-matrix
+        uses: jgiannuzzi/setup-build-matrix@v1
+        with:
+          config: |
+            matrix:
+              workflows: [${{ steps.changed-workflows.outputs.values }}]
+            operations: []
+
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ needs.affected.outputs.changed-workflows != '' }}
+    needs: [affected]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.affected.outputs.workflows-matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get PR Info
+        id: pr
+        uses: jwalton/gh-find-current-pr@v1
+        with:
+          state: all
+
+      - name : Get bump version from the PR title
+        id: bump_version
+        run: |
+          bump_version=$(echo "${{ steps.pr.outputs.title }}" | tr " " "\n" | grep bump: | cut -d ":" -f 2)
+          if [ -z "$bump_version" ]; then bump_version="patch"; fi
+          echo "::set-output name=value::$bump_version"
+
+      - name: Bump version and push tag
+        uses: SOLIDSoftworks/semver-tags@v1
+        id: tag_version
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+          tag-prefix: ${{ matrix.workflows }}-v
+          default-version: '0.1.0'
+          incremented-value: ${{ steps.bump_version.outputs.value }}
+          dry-run: ${{ github.event_name == 'pull_request' }}
+
+      - name: Comment on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **Next Version:** 🚀 ${{ matrix.workflows }}-v${{ steps.tag_version.outputs.semantic-version }}
+
+      - uses: haya14busa/action-update-semver@v1
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          tag: ${{ matrix.workflows }}-v${{ steps.tag_version.outputs.semantic-version }}
+

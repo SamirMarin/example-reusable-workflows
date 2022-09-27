@@ -1,0 +1,27 @@
+name: Echo repo
+
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner version"
+        default: ubuntu-latest
+        required: false
+        type: string
+
+jobs:
+  build:
+    runs-on: {{ inputs.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: set repo output
+        env:
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          echo ::set-output name=REPO::$REPO
+        id: github-repo
+      - name: echo repo
+        run: |
+          echo ${{ steps.github-repo.output.REPO }}
