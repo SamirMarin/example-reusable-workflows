@@ -19,3 +19,6 @@ jobs:
       - name: hello world
         run: |
           echo 'hello world'
+      - name: hello universe
+        run: |
+          echo "hello universe"

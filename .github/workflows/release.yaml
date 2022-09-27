@@ -75,10 +75,10 @@ jobs:
           echo "::set-output name=value::$bump_version"
 
       - name: Bump version and push tag
-        uses: SOLIDSoftworks/semver-tags@v1.3.6
+        uses: SamirMarin/semver-tags@v1.0.0
         id: tag_version
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag-prefix: ${{ matrix.workflows }}-v
           default-version: '0.1.0'
           incremented-value: ${{ steps.bump_version.outputs.value }}
