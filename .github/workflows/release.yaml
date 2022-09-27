@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - release-workflows
     paths:
       - ".github/workflows/reusable-**"
     tags:
@@ -83,7 +82,7 @@ jobs:
           tag-prefix: ${{ matrix.workflows }}-v
           default-version: '0.1.0'
           incremented-value: ${{ steps.bump_version.outputs.value }}
-            #dry-run: ${{ github.event_name == 'pull_request' }}
+          dry-run: ${{ github.event_name == 'pull_request' }}
 
       - name: Comment on PR
         if: ${{ github.event_name == 'pull_request' }}
@@ -97,4 +96,3 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         with:
           tag: ${{ matrix.workflows }}-v${{ steps.tag_version.outputs.semantic-version }}
-
