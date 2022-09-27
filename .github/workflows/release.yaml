@@ -76,7 +76,7 @@ jobs:
           echo "::set-output name=value::$bump_version"
 
       - name: Bump version and push tag
-        uses: SOLIDSoftworks/semver-tags@v1
+        uses: SOLIDSoftworks/semver-tags@v1.3.6
         id: tag_version
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
