@@ -22,7 +22,7 @@ jobs:
         uses: tj-actions/changed-files@v31
         with:
           files: |
-            ${{ inputs.pakckages }}
+            ${{ inputs.packages }}
 
       - name: Changed packages
         id: changed-workflows
@@ -30,4 +30,11 @@ jobs:
           changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
           echo "Changed Workflows: $changed_workflows"
           echo "::set-output name=values::$changed_workflows"
+          names={{ inputs.packages }}
+          SAVEIFS=$IFS   # Save current IFS (Internal Field Separator)
+          IFS=$'\n'      # Change IFS to newline char
+          names=($names) # split the `names` string into an array by the same name
+          IFS=$SAVEIFS   # Restore original IFS
+          echo "packages"
+          echo $names
 
