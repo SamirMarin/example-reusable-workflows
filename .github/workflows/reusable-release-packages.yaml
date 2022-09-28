@@ -22,9 +22,9 @@ jobs:
       - name: Get changed files
         id: changed-dirs
         uses: tj-actions/changed-files@v31
-        with:
-          files: |
-            ${{ inputs.packages }}
+          #with:
+          #  files: |
+          #    ${{ inputs.packages }}
 
       - name: Get changed packages that changed
         id: changed-workflows
