@@ -31,7 +31,8 @@ jobs:
           for package in ${{ inputs.packages }}; do
             echo "this is the pack"
             echo $package
-            newarr+=$package
+            newarr+=($package)
           done
+          echo "here"
           echo $newarr
 
