@@ -28,11 +28,20 @@ jobs:
           echo "Changed Workflows: $changed_workflows"
           echo "::set-output name=values::$changed_workflows"
           release_packages=""
+          changes_files=(${{ steps.changed-files.outputs.all_modified_files }})
           for package in ${{ inputs.packages }}; do
-            echo "this is the pack"
+            echo "current package"
             echo $package
-            release_packages="${release_packages},${package}"
+            if [[ " ${changes_files[*]} " =~ " ${package} " ]]; then
+              if [ -z "$release_packages" ]
+              then
+                echo "\$var is empty"
+                release_packages="${release_packages}${package}"
+              else
+                release_packages="${release_packages},${package}"
+              fi
+            fi
           done
-          echo "here"
-          echo $release_packages
+          echo "Release Packages: $release_packages"
+          echo "::set-output name=values::$release_packages"
 
