@@ -30,7 +30,7 @@ jobs:
       run: | 
         project=$(echo "${GITHUB_REF#refs/*/}" | cut -d "-" -f 1)
         package_tag=$(echo "${GITHUB_REF#refs/*/}" | cut -d "v" -f 2)
-        project_dir=$(echo "${{ inputs.projects_dir }}/${project}"
+        project_dir=$(echo "${{ inputs.projects_dir }}/${project}")
         echo ::set-output name=project_dir::${project_dir}
         echo ::set-output name=tag::${package_tag}
     - name: Setup .NET
