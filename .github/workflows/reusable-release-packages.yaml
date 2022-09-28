@@ -4,13 +4,16 @@ on:
   workflow_call:
     inputs:
       packages:
-        description: "List of packages to release deliminated by a space"
+        description: "List of packages to release, delimiter a space"
         required: true
         type: string
 
 jobs:
   affected:
     runs-on: ubuntu-latest
+    outputs:
+      changed-packages: ${{ steps.changed-packages.outputs.values }}
+      packages-matrix: ${{ steps.build-matrix.outputs.matrix }}
 
     steps:
       - uses: actions/checkout@v3
@@ -22,22 +25,19 @@ jobs:
         uses: tj-actions/changed-files@v31
 
       - name: Changed packages
-        id: changed-workflows
+        id: changed-packages
         run: |
           changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
           echo "Changed Workflows: $changed_workflows"
-          echo "::set-output name=values::$changed_workflows"
           release_packages=""
           changes_files=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
-          echo "Changed files any? "
-          echo " ${changes_files[*]} "
+          echo "Changed Files: $changed_files"
           for package in ${{ inputs.packages }}; do
             echo "current package"
             echo $package
             if [[ "${changes_files}" == *"${package}"* ]]; then
               if [ -z "$release_packages" ]
               then
-                echo "\$var is empty"
                 release_packages="${release_packages}${package}"
               else
                 release_packages="${release_packages},${package}"
@@ -47,3 +47,58 @@ jobs:
           echo "Release Packages: $release_packages"
           echo "::set-output name=values::$release_packages"
 
+      - name: Build matrix
+        if: ${{ steps.changed-package.outputs.values != '' }}
+        id: build-matrix
+        uses: jgiannuzzi/setup-build-matrix@v1
+        with:
+          config: |
+            matrix:
+              package: [${{ steps.changed-packages.outputs.values }}]
+            operations: []
+
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ needs.affected.outputs.changed-packages != '' }}
+    needs: [affected]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.affected.outputs.packages-matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get PR Info
+        id: pr
+        uses: jwalton/gh-find-current-pr@v1
+        with:
+          state: all
+
+      - name : Get bump version from the PR title
+        id: bump_version
+        run: |
+          bump_version=$(echo "${{ steps.pr.outputs.title }}" | tr " " "\n" | grep bump: | cut -d ":" -f 2)
+          if [ -z "$bump_version" ]; then bump_version="patch"; fi
+          echo "::set-output name=value::$bump_version"
+
+      - name: Bump version and push tag
+        uses: SamirMarin/semver-tags@v1.0.0
+        id: tag_version
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag-prefix: ${{ matrix.package }}-v
+          default-version: '0.1.0'
+          incremented-value: ${{ steps.bump_version.outputs.value }}
+          dry-run: ${{ github.event_name == 'pull_request' }}
+
+      - name: Comment on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **Next Version:** 🚀 ${{ matrix.package }}-v${{ steps.tag_version.outputs.semantic-version }}
+
+      - uses: haya14busa/action-update-semver@v1
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          tag: ${{ matrix.package }}-v${{ steps.tag_version.outputs.semantic-version }}
