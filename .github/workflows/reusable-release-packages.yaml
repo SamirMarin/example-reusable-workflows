@@ -24,7 +24,7 @@ jobs:
         uses: tj-actions/changed-files@v31
         with:
           files: |
-            ${{ inputs.pakckages }}
+            ${{ inputs.packages }}
 
       - name: Get changed packages that changed
         id: changed-workflows
