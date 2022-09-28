@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       packages:
-        description: "List of pakckages to release"
+        description: "List of packages to release deliminated by a space"
         required: true
         type: string
 
@@ -27,12 +27,12 @@ jobs:
           changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
           echo "Changed Workflows: $changed_workflows"
           echo "::set-output name=values::$changed_workflows"
-          newarr=()
+          release_packages=""
           for package in ${{ inputs.packages }}; do
             echo "this is the pack"
             echo $package
-            newarr+=($package)
+            release_packages="${release_packages},${package}"
           done
           echo "here"
-          echo $newarr
+          echo $release_packages
 
