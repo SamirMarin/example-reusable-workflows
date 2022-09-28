@@ -31,7 +31,6 @@ jobs:
           echo "Changed Workflows: $changed_workflows"
           echo "::set-output name=values::$changed_workflows"
           #names=${{ inputs.packages }}
-          echo $names
           #SAVEIFS=$IFS   # Save current IFS (Internal Field Separator)
           #IFS=$'\n'      # Change IFS to newline char
           #names=($names) # split the `names` string into an array by the same name
