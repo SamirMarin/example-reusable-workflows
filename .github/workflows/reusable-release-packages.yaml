@@ -29,6 +29,8 @@ jobs:
           echo "::set-output name=values::$changed_workflows"
           release_packages=""
           changes_files=(${{ steps.changed-files.outputs.all_modified_files }})
+          echo "Changed files any? "
+          echo " ${changes_files[*]} "
           for package in ${{ inputs.packages }}; do
             echo "current package"
             echo $package
