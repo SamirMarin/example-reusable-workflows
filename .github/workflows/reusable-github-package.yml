@@ -37,8 +37,8 @@ jobs:
     - name: Add Nuget Source
       run: dotnet nuget add source --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
     - name: Build
-      working_dir: ${{ inputs.working_dir }}
+      working-directory: ${{ inputs.working_dir }}
       run: dotnet pack --configuration Release /p:Version=${{ steps.vars.outputs.tag }}
     - name: Publish
-      working_dir: ${{ inputs.working_dir }}
+      working-directory: ${{ inputs.working_dir }}
       run: dotnet nuget push **/*.nupkg --skip-duplicate --source "github" --api-key ${{ secrets.GITHUB_TOKEN }}
