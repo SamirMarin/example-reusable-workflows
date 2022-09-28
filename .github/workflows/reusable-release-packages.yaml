@@ -29,5 +29,5 @@ jobs:
       - name: Get changed packages that changed
         id: changed-workflows
         run: |
-          echo "${{ steps.changed-dirs.outputs.all_modified_files }}"
+          echo ${{ steps.changed-dirs.outputs.all_modified_files }}
 
