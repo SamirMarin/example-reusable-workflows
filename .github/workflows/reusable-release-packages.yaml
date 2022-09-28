@@ -48,7 +48,7 @@ jobs:
           echo "::set-output name=values::$release_packages"
 
       - name: Build matrix
-        if: ${{ steps.changed-package.outputs.values != '' }}
+        if: ${{ steps.changed-packages.outputs.values != '' }}
         id: build-matrix
         uses: jgiannuzzi/setup-build-matrix@v1
         with:
