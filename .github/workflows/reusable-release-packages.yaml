@@ -11,8 +11,6 @@ on:
 jobs:
   affected:
     runs-on: ubuntu-latest
-    outputs:
-      changed-workflows: ${{ steps.changed-workflows.outputs.values }}
 
     steps:
       - uses: actions/checkout@v3
@@ -20,14 +18,13 @@ jobs:
           fetch-depth: 0
 
       - name: Get changed files
-        id: changed-dirs
-        uses: tj-actions/changed-files@v31
-          #with:
-          #  files: |
-          #    ${{ inputs.packages }}
+        id: changed-files
+        uses: tj-actions/changed-files@v11.5
 
-      - name: Get changed packages that changed
+      - name: Get changed workflows ounder /workflows
         id: changed-workflows
         run: |
-          echo ${{ steps.changed-dirs.outputs.all_modified_files }}
+          changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}"
+          echo "Changed Workflows: $changed_workflows"
+          echo "::set-output name=values::$changed_workflows"
 
