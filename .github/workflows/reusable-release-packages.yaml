@@ -20,9 +20,6 @@ jobs:
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v31
-        with:
-          files: |
-            ${{ inputs.packages }}
 
       - name: Changed packages
         id: changed-workflows
@@ -30,4 +27,8 @@ jobs:
           changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
           echo "Changed Workflows: $changed_workflows"
           echo "::set-output name=values::$changed_workflows"
+          for package in ${{ inputs.packages }}; do
+            echo "this is the pack"
+            echo $package
+          done
 
