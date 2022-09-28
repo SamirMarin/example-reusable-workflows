@@ -24,7 +24,7 @@ jobs:
       - name: Get changed workflows ounder /workflows
         id: changed-workflows
         run: |
-          changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}"
+          changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
           echo "Changed Workflows: $changed_workflows"
           echo "::set-output name=values::$changed_workflows"
 
