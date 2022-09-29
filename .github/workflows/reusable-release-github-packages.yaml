@@ -120,7 +120,7 @@ jobs:
         id: vars
         run: | 
           project=$(echo "${{ steps.tag_version.outputs.new_tag }}" | cut -d "-" -f 1)
-          package_tag=$(echo "${ steps.tag_version.outputs.new_tag }" | cut -d "v" -f 2)
+          package_tag=$(echo "${{ steps.tag_version.outputs.new_tag }}" | cut -d "v" -f 2)
           project_dir=$(echo "${{ inputs.projects_dir }}/${project}")
           echo ::set-output name=project_dir::${project_dir}
           echo ::set-output name=tag::${package_tag}
