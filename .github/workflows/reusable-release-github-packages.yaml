@@ -116,14 +116,11 @@ jobs:
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
 
-      - name: Set package outputs 
+      - name: Set Project Dir
         id: vars
         run: | 
-          project=$(echo "${{ steps.tag_version.outputs.new_tag }}" | cut -d "-" -f 1)
-          package_tag=$(echo "${{ steps.tag_version.outputs.new_tag }}" | cut -d "v" -f 2)
-          project_dir=$(echo "${{ inputs.projects_dir }}/${project}")
+          project_dir=$(echo "${{ inputs.projects_dir }}/${{ matrix.package }}")
           echo ::set-output name=project_dir::${project_dir}
-          echo ::set-output name=tag::${package_tag}
       - name: Setup .NET
         uses: actions/setup-dotnet@v2
         with:
@@ -137,7 +134,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         working-directory: ${{ steps.vars.outputs.project_dir }}
         run: |
-          dotnet pack --configuration Release /p:Version=${{ steps.vars.outputs.tag }}
+          dotnet pack --configuration Release /p:Version=${{ steps.tag_version.outputs.new_version }}
       - name: Publish
         if: ${{ github.event_name != 'pull_request' }}
         working-directory: ${{ steps.vars.outputs.project_dir }}
