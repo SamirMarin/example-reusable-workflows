@@ -1,0 +1,141 @@
+name: Release Packages
+
+on:
+  workflow_call:
+    inputs:
+      packages:
+        description: "List of packages to release, delimiter a space"
+        required: true
+        type: string
+      dotnet_version:
+        description: "dotnet version to use"
+        default: 6.0.x
+        required: false
+        type: string
+      projects_dir:
+        description: "Dir where packages can be found"
+        default: ./
+        required: false
+        type: string
+
+jobs:
+  affected:
+    runs-on: ubuntu-latest
+    outputs:
+      changed-packages: ${{ steps.changed-packages.outputs.values }}
+      packages-matrix: ${{ steps.build-matrix.outputs.matrix }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v31
+
+      - name: Changed packages
+        id: changed-packages
+        run: |
+          changed_workflows=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
+          echo "Changed Workflows: $changed_workflows"
+          release_packages=""
+          changes_files=$(echo "${{ steps.changed-files.outputs.all_modified_files }}")
+          echo "Changed Files: $changed_files"
+          for package in ${{ inputs.packages }}; do
+            echo "current package"
+            echo $package
+            if [[ "${changes_files}" == *"${package}"* ]]; then
+              if [ -z "$release_packages" ]
+              then
+                release_packages="${release_packages}${package}"
+              else
+                release_packages="${release_packages},${package}"
+              fi
+            fi
+          done
+          echo "Release Packages: $release_packages"
+          echo "::set-output name=values::$release_packages"
+
+      - name: Build matrix
+        if: ${{ steps.changed-packages.outputs.values != '' }}
+        id: build-matrix
+        uses: jgiannuzzi/setup-build-matrix@v1
+        with:
+          config: |
+            matrix:
+              package: [${{ steps.changed-packages.outputs.values }}]
+            operations: []
+
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ needs.affected.outputs.changed-packages != '' }}
+    needs: [affected]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.affected.outputs.packages-matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get PR Info
+        id: pr
+        uses: jwalton/gh-find-current-pr@v1
+        with:
+          state: all
+
+      - name : Get bump version from the PR title
+        id: bump_version
+        run: |
+          bump_version=$(echo "${{ steps.pr.outputs.title }}" | tr " " "\n" | grep bump: | cut -d ":" -f 2)
+          if [ -z "$bump_version" ]; then bump_version="patch"; fi
+          echo "::set-output name=value::$bump_version"
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: ${{ steps.bump_version.outputs.value }}
+          tag_prefix: ${{ matrix.package }}-v
+          dry_run: ${{ github.event_name == 'pull_request' }}
+
+      - name: Comment on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **Next Release:** 🚀 ${{ steps.tag_version.outputs.new_tag }}
+            **Next Package:** 🚀 ${{matrix.package}} ${{ steps.tag_version.outputs.new_version }}
+
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+
+      - name: Set Project Dir
+        id: vars
+        run: | 
+          project_dir=$(echo "${{ inputs.projects_dir }}/${{ matrix.package }}")
+          echo ::set-output name=project_dir::${project_dir}
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Add Nuget Source
+        if: ${{ github.event_name != 'pull_request' }}
+        run: dotnet nuget add source --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+      - name: Build
+        if: ${{ github.event_name != 'pull_request' }}
+        working-directory: ${{ steps.vars.outputs.project_dir }}
+        run: |
+          dotnet pack --configuration Release /p:Version=${{ steps.tag_version.outputs.new_version }}
+      - name: Publish
+        if: ${{ github.event_name != 'pull_request' }}
+        working-directory: ${{ steps.vars.outputs.project_dir }}
+        run: dotnet nuget push **/*.nupkg --skip-duplicate --source "github" --api-key ${{ secrets.GITHUB_TOKEN }}
