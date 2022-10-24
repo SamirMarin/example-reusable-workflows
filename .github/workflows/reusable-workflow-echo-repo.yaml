@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: set repo output
+      - name: set repo output to test
         env:
           REPO: ${{ github.event.repository.name }}
         run: |
