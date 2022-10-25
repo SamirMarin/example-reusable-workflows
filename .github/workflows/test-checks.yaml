@@ -35,14 +35,14 @@ jobs:
           exit 0
 
 
-  diff-${{ github.event.repository.name }}:
+  diff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: echo run
+      - name: diff ${{ github.event.repository.name }}
         run: |
           echo "hello world now"
           exit 0
