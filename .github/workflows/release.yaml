@@ -16,6 +16,17 @@ on:
       - main
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: bump_labels
+        id: bump-label
+        uses: SamirMarin/bump-type-label-action@v0.0.1
+
+      - name: echo-test
+        run: echo ${{ steps.bump-label.outputs.value }}
+        
   affected:
     runs-on: ubuntu-latest
     outputs:
